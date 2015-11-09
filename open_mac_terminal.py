@@ -100,6 +100,7 @@ class OpenMacTerminal(sublime_plugin.TextCommand):
         '''
 
         selected_paths = kwargs.get('paths', [])
+        void = kwargs.get('void', '')
 
         # get settings
         directory_mode = self.settings.get('directory_mode', 'file')
@@ -108,12 +109,29 @@ class OpenMacTerminal(sublime_plugin.TextCommand):
         if directory_mode not in ('project', 'file'):
             directory_mode = 'file'
 
-        paths_picker = PathPicker(self.view, selected_paths, directory_mode) # pylint: disable=no-member
-        self.paths = paths_picker.fetch_paths()
-        self.open_terminal()
+        #paths_picker = PathPicker(self.view, selected_paths, directory_mode) # pylint: disable=no-member
+        #self.paths = paths_picker.fetch_paths()
+
+        file = self.view.file_name()
+        folders = self.view.window().folders()
+        arg = 0
+
+        if void == 'file':
+            self.paths = file
+            arg = 1
+        elif void == 'directory':
+            self.paths = os.path.dirname(file)
+        else:
+            for folder in folders:
+                if folder in file:
+                    self.paths = folder
+
+        self.open_terminal_command(self.paths, arg)
+        #self.open_terminal()
 
         self.debug_info['directory_mode'] = directory_mode
         self.debug_info['paths'] = self.paths
+        self.debug_info['void'] = void
 
         debug(self.debug_info, self.settings.get('debug', False))
 
@@ -150,7 +168,7 @@ class OpenMacTerminal(sublime_plugin.TextCommand):
 
         self.open_terminal_command(self.paths[selected_index])
 
-    def open_terminal_command(self, path):
+    def open_terminal_command(self, path, file):
         '''
         Open terminal with javascript/applescript
         '''
@@ -175,6 +193,9 @@ class OpenMacTerminal(sublime_plugin.TextCommand):
 
         command.append(applescript_path)
         command.append(quoted_path)
+
+        if file:
+            command.append("1")
 
         #open terminal
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, startupinfo=None)

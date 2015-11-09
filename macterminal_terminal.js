@@ -26,7 +26,22 @@ function run(argv) {
         {selected : {'=' : true}}
     );
 
-    var gotoDirectory = 'cd ' + argv[0];
+    var cmd = []
+
+    if (argv[1]) {
+        cmd = [
+            'clear',
+            'exec "' + argv[0] + '"'
+        ]
+    } else {
+        cmd = [
+            'cd "' + argv[0] + '"',
+            "clear"
+        ]
+    }
+
+    var gotoDirectory = cmd.join(' && ');
+    //var gotoDirectory = 'cd ' + argv[0];
 
     Terminal.doScript(
         gotoDirectory,
@@ -34,11 +49,12 @@ function run(argv) {
             in: currrentTabs[0]
         }
     );
-
+/*
     Terminal.doScript(
         'clear',
         {
             in: currrentTabs[0]
         }
     );
+*/
 }

@@ -19,8 +19,25 @@ function run(argv) {
         {using: "command down"}
     );
 
-    var gotoDirectory = 'cd ' + argv.join(' ');
+    //var gotoDirectory = 'cd ' + argv.join(' ');
+
+    var cmd = []
+
+    if (argv[1]) {
+        cmd = [
+            'clear',
+            'exec "' + argv[0] + '"'
+        ]
+    } else {
+        cmd = [
+            'cd "' + argv.join(' ') + '"',
+            "clear"
+        ]
+    }
+
+    //var gotoDirectory = 'cd ' + argv.join(' ');
+    var gotoDirectory = cmd.join(' && ');
     var currentTerminalSession = Terminal.currentTerminal().currentSession();
     currentTerminalSession.write({text: gotoDirectory});
-    currentTerminalSession.write({text: 'clear'});
+    //currentTerminalSession.write({text: 'clear'});
 }
