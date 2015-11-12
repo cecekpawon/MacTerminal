@@ -7,6 +7,8 @@ on run argv
         return
     end if
 
+    set fileType to (do shell script "file -b " & folderName)
+
     tell application "iTerm"
         if not frontmost then
             activate
@@ -18,8 +20,11 @@ on run argv
         end tell
 
         tell current session of current window
-            write text "cd " & folderName
-            write text "clear"
+            if fileType is "directory" then
+                set write text "cd " & folderName & " && clear"
+            else
+                set write text to "clear && " & folderName
+            end if
         end tell
     end tell
 end run

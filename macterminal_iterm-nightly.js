@@ -2,7 +2,7 @@
 
 function run(argv) {
 
-    if (argv.length === 0) {
+    if (argv.length === 0 || !(file = argv[0])) {
         return;
     }
 
@@ -19,8 +19,25 @@ function run(argv) {
         {using: "command down"}
     );
 
-    var gotoDirectory = 'cd ' + argv.join(' ');
+    var cmd = []
+    var app = Application.currentApplication()
+        app.includeStandardAdditions = true
+
+    var fileType = app.doShellScript("file -b " + file)
+
+    if (fileType == 'directory') {
+        cmd = [
+            'cd ' + file,
+            "clear"
+        ]
+    } else {
+        cmd = [
+            'clear',
+            file
+        ]
+    }
+
+    var gotoDirectory = cmd.join(' && ');
     var currentTerminalSession = Terminal.currentWindow.currentSession;
     currentTerminalSession.write({text: gotoDirectory});
-    currentTerminalSession.write({text: 'clear'});
 }

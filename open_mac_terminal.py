@@ -12,76 +12,6 @@ import sublime_plugin
 from pprint import pprint
 from decimal import Decimal
 
-class PathPicker(object):
-    '''
-    Class to manage paths for files
-    '''
-
-    def __init__(self, view, selected_paths, directory_mode):
-        self.view = view
-        self.selected_paths = selected_paths
-        self.directory_mode = directory_mode
-
-    def fetch_paths(self):
-        """
-        Get list of paths
-        """
-        paths = self.get_paths_for_selected_items()
-        paths = self.get_project_paths(paths)
-        paths = self.get_path_for_currently_open_file(paths)
-
-        return list(set(paths))
-
-    def get_paths_for_selected_items(self):
-        '''
-        Get paths for selected items in sidebar.
-        '''
-
-        paths_to_choose = []
-        for single_path in self.selected_paths:
-            if os.path.isdir(single_path):
-                paths_to_choose.append(single_path)
-            else:
-                paths_to_choose.append(os.path.dirname(single_path))
-
-        return paths_to_choose
-
-    def get_project_paths(self, paths):
-        '''
-        Get all root directories for project.
-        '''
-
-        if len(paths) > 0:
-            return paths
-
-        if self.directory_mode != 'project':
-            return paths
-
-        paths = paths + self.view.window().folders()
-
-        return paths
-
-    def get_path_for_currently_open_file(self, paths): # pylint: disable=invalid-name
-        '''
-        Get paths for currently open tab in sublime
-        '''
-        if len(paths) > 0:
-            return paths
-
-        if self.directory_mode != 'file':
-            return paths
-
-        if self.view.file_name() is not None:
-            paths.append(os.path.dirname(self.view.file_name()))
-
-        elif self.view.window().active_view().file_name() is not None:
-            paths.append(os.path.dirname(self.view.window().active_view().file_name()))
-
-        else:
-            paths = paths + self.view.window().folders()
-
-        return paths
-
 class OpenMacTerminal(sublime_plugin.TextCommand):
     '''
     Class is opening new terminal window with the path of current file
@@ -91,84 +21,71 @@ class OpenMacTerminal(sublime_plugin.TextCommand):
         sublime_plugin.TextCommand.__init__(self, *args, **kwargs)
 
         self.settings = sublime.load_settings('MacTerminal.sublime-settings')
-        self.paths = []
+        self.paths = ''
         self.debug_info = {}
+
+    #def is_visible(self, paths =[]):
+    #    return self.settings.get('contextmenu_document', False)
+
+    #def is_enabled(self, paths = []):
+    #    return self.settings.get('contextmenu_document', False)
 
     def run(self, *dummy, **kwargs):
         '''
         This method is invoked by sublime
         '''
 
-        selected_paths = kwargs.get('paths', [])
-        void = kwargs.get('void', '')
-
-        # get settings
-        directory_mode = self.settings.get('directory_mode', 'file')
+        selected_paths = kwargs.get('paths', '')
+        mode = kwargs.get('mode', '')
+        clipboard_mode = kwargs.get('clipboard_mode', '')
 
         # temporary hack for old configurations
-        if directory_mode not in ('project', 'file'):
-            directory_mode = 'file'
+        if not clipboard_mode and mode not in ('file', 'directory', 'project'):
+            mode = 'file'
 
-        #paths_picker = PathPicker(self.view, selected_paths, directory_mode) # pylint: disable=no-member
-        #self.paths = paths_picker.fetch_paths()
+        self.paths = ''
+        folders = []
 
-        file = self.view.file_name()
-        folders = self.view.window().folders()
-        arg = 0
-
-        if void == 'file':
-            self.paths = file
-            arg = 1
-        elif void == 'directory':
-            self.paths = os.path.dirname(file)
+        if selected_paths:
+            file = selected_paths[0]
+            if os.path.isdir(file) and mode == 'directory':
+                mode = 'file'
         else:
+            file = self.view.file_name()
+
+        folders = self.view.window().folders()
+
+        if mode == 'file':
+            self.paths = file
+        elif mode == 'directory' or clipboard_mode:
+            self.paths = os.path.dirname(file)
+        elif folders:
             for folder in folders:
                 if folder in file:
                     self.paths = folder
 
-        self.open_terminal_command(self.paths, arg)
-        #self.open_terminal()
+        if not self.paths:
+            #sublime.error_message(self.paths)
+            return
 
-        self.debug_info['directory_mode'] = directory_mode
+        if clipboard_mode:
+            clipboard_path = file
+
+            if clipboard_mode == 'quote':
+                clipboard_path = '"' + file + '"'
+            elif clipboard_mode == 'backslash':
+                clipboard_path = file.replace(' ', '\ ')
+
+            sublime.set_clipboard(clipboard_path)
+
+        self.open_terminal_command(self.paths)
+
         self.debug_info['paths'] = self.paths
-        self.debug_info['void'] = void
+        self.debug_info['mode'] = mode
 
         debug(self.debug_info, self.settings.get('debug', False))
 
-    def open_terminal(self):
-        '''
-        Choose what to open - terminal with current path or quick selection window
-        '''
-        if len(self.paths) == 0:
-            return False
-
-        if len(self.paths) == 1:
-            self.open_terminal_command(self.paths[0])
-            return True
-
-        self.show_directory_selection()
-
-    def show_directory_selection(self):
-        '''
-        Open quick selection window with paths
-        '''
-
-        self.view.window().show_quick_panel( # pylint: disable=no-member
-            self.paths,
-            self.open_selected_direcotory,
-            sublime.MONOSPACE_FONT
-        )
-
-    def open_selected_direcotory(self, selected_index):
-        '''
-        This method is invoked by sublime quick panel
-        '''
-        if selected_index == -1:
-            return False
-
-        self.open_terminal_command(self.paths[selected_index])
-
-    def open_terminal_command(self, path, file):
+    def open_terminal_command(self, path):
         '''
         Open terminal with javascript/applescript
         '''
@@ -193,9 +110,6 @@ class OpenMacTerminal(sublime_plugin.TextCommand):
 
         command.append(applescript_path)
         command.append(quoted_path)
-
-        if file:
-            command.append("1")
 
         #open terminal
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, startupinfo=None)

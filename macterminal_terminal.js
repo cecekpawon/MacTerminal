@@ -1,8 +1,7 @@
 /* global Application, delay */
 
 function run(argv) {
-
-    if (argv.length === 0) {
+    if (argv.length === 0 || !(file = argv[0])) {
         return;
     }
 
@@ -27,21 +26,24 @@ function run(argv) {
     );
 
     var cmd = []
+    var app = Application.currentApplication()
+        app.includeStandardAdditions = true
 
-    if (argv[1]) {
+    var fileType = app.doShellScript("file -b " + file)
+
+    if (fileType == 'directory') {
         cmd = [
-            'clear',
-            'exec "' + argv[0] + '"'
+            'cd ' + file,
+            "clear"
         ]
     } else {
         cmd = [
-            'cd "' + argv[0] + '"',
-            "clear"
+            'clear',
+            file
         ]
     }
 
     var gotoDirectory = cmd.join(' && ');
-    //var gotoDirectory = 'cd ' + argv[0];
 
     Terminal.doScript(
         gotoDirectory,
@@ -49,12 +51,4 @@ function run(argv) {
             in: currrentTabs[0]
         }
     );
-/*
-    Terminal.doScript(
-        'clear',
-        {
-            in: currrentTabs[0]
-        }
-    );
-*/
 }

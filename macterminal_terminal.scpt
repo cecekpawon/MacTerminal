@@ -7,6 +7,8 @@ on run argv
         return
     end if
 
+    set fileType to (do shell script "file -b " & (folderName as string))
+
     tell application "Terminal"
         if not frontmost then
             activate
@@ -17,9 +19,15 @@ on run argv
             keystroke "t" using command down
         end tell
 
-        set commandToRun to "cd " & (folderName as string)
+        if fileType is "directory" then
+            set commandToRun to "cd " & (folderName as string) & " && clear"
+        else
+            set commandToRun to "clear && " & (folderName as string)
+        end if
+
+        -- set commandToRun to "cd " & (folderName as string)
         set current_tab to selected tab of first window whose frontmost is true
         do script commandToRun in current_tab
-        do script "clear" in current_tab
+        -- do script "clear" in current_tab
     end tell
 end run

@@ -1,6 +1,23 @@
 [
-  {
-    "caption": "Open in terminal",
-    "command": "open_mac_terminal"
-  }
+    {
+        "caption": "MacTerminal: File",
+        "command": "open_mac_terminal",
+        "args" : {
+          "mode" : "file"
+        }
+    },
+    {
+        "caption": "MacTerminal: Directory",
+        "command": "open_mac_terminal",
+        "args" : {
+          "mode" : "directory"
+        }
+    },
+    {
+        "caption": "MacTerminal: Project",
+        "command": "open_mac_terminal",
+        "args" : {
+          "mode" : "project"
+      }
+    }
 ]
